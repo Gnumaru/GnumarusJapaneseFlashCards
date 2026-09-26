@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kanji Flashcards</title>
-<meta name="description" content="Flashcard trainer for JLPT N5-N1 and Jōyō kanji. Plain HTML, CSS and JavaScript.">
+<title>Kana &amp; Kanji Flashcards</title>
+<meta name="description" content="Flashcard trainer for hiragana, katakana, JLPT N5-N1 and Jōyō kanji. Plain HTML, CSS and JavaScript.">
 <link rel="stylesheet" href="css/styles.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#23383;</text></svg>">
 </head>
@@ -12,7 +12,7 @@
 <a class="skip-link" href="#flashcard">Skip to the flashcard</a>
 
 <header class="topbar">
-  <h1 class="topbar__title">Kanji Flashcards</h1>
+  <h1 class="topbar__title">Kana &amp; Kanji Flashcards</h1>
   <nav class="topbar__nav">
     <label class="field">
       <span class="field__label">List</span>
@@ -25,9 +25,13 @@
   <!-- List picker ------------------------------------------------------------>
   <section id="picker" class="panel" aria-labelledby="picker-title">
     <h2 id="picker-title" class="panel__title">Choose a list</h2>
-    <p class="panel__lead">Pick a JLPT level or a Jōyō school grade. The cards always appear in the order of the list; shuffle it if you want a different order.</p>
+    <p class="panel__lead">Pick a kana list, a JLPT level or a Jōyō school grade. The cards always appear in the order of the list; shuffle it if you want a different order.</p>
 
     <div class="picker__groups">
+      <section class="picker__group" aria-labelledby="picker-kana">
+        <h3 id="picker-kana" class="picker__group-title">Kana</h3>
+        <ul id="picker-kana-list" class="picker__list"></ul>
+      </section>
       <section class="picker__group" aria-labelledby="picker-jlpt">
         <h3 id="picker-jlpt" class="picker__group-title">JLPT</h3>
         <ul id="picker-jlpt-list" class="picker__list"></ul>
@@ -38,7 +42,9 @@
       </section>
     </div>
 
-    <p class="picker__note">Jōyō grades 1&ndash;6 are the official elementary school table. Grades 7&ndash;12 follow the
+    <p class="picker__note">The kana follow the official 五十音 (gojūon) table: the basic lists hold the 46 kana
+      learned first and the extras hold the dakuten, handakuten, small, archaic, yōon and foreign sound kana.
+      Jōyō grades 1&ndash;6 are the official elementary school table. Grades 7&ndash;12 follow the
       Kanji Kentei levels used by the Japanese school system, since the Ministry of Education does not publish a
       per-year table for secondary school.</p>
   </section>
@@ -64,21 +70,21 @@
             aria-label="Current kanji. Activate to show or hide its meanings and readings.">
       <span id="card-kanji" class="flashcard__kanji">-</span>
       <span id="card-details" class="flashcard__details" hidden>
-        <span class="detail">
-          <span class="detail__label">Meanings</span>
-          <span id="detail-meanings" class="detail__value">-</span>
+        <span id="detail-row-1" class="detail">
+          <span id="detail-label-1" class="detail__label">Meanings</span>
+          <span id="detail-value-1" class="detail__value">-</span>
         </span>
-        <span class="detail">
-          <span class="detail__label">On&#8217;yomi</span>
-          <span id="detail-onyomi" class="detail__value">-</span>
+        <span id="detail-row-2" class="detail">
+          <span id="detail-label-2" class="detail__label">On&#8217;yomi</span>
+          <span id="detail-value-2" class="detail__value detail__value--kana">-</span>
         </span>
-        <span class="detail">
-          <span class="detail__label">Kun&#8217;yomi</span>
-          <span id="detail-kunyomi" class="detail__value">-</span>
+        <span id="detail-row-3" class="detail">
+          <span id="detail-label-3" class="detail__label">Kun&#8217;yomi</span>
+          <span id="detail-value-3" class="detail__value detail__value--kana">-</span>
         </span>
-        <span class="detail">
-          <span class="detail__label">Strokes</span>
-          <span id="detail-strokes" class="detail__value">-</span>
+        <span id="detail-row-4" class="detail">
+          <span id="detail-label-4" class="detail__label">Strokes</span>
+          <span id="detail-value-4" class="detail__value">-</span>
         </span>
         <span class="flashcard__tip">Activate again to hide</span>
       </span>
@@ -136,8 +142,9 @@
 </main>
 
 <footer class="footer">
-  <p>Progress is saved in this browser only. Kanji data: KANJIDIC2 (EDRDG), JLPT levels from Jonathan Waller&#8217;s
-    JLPT resources, Jōyō grades from the Kanji Kentei grade lists. See <code>CREDITS.md</code>.</p>
+  <p>Progress is saved in this browser only. Kana data: the official 五十音 (gojūon) table. Kanji data: KANJIDIC2
+    (EDRDG), JLPT levels from Jonathan Waller&#8217;s JLPT resources, Jōyō grades from the Kanji Kentei grade lists.
+    See <code>CREDITS.md</code>.</p>
 </footer>
 
 <noscript>

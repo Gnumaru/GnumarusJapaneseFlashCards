@@ -1,23 +1,50 @@
 /*
- * Kanji Flashcards - plain JavaScript, no dependencies.
+ * Kana and Kanji Flashcards - plain JavaScript, no dependencies.
  *
  * Study rules:
- *   - The current kanji is the only thing on the card; click it to reveal its
- *     meanings and readings, click again to hide them.
- *   - Left arrow  -> move the current kanji to the end of the remaining list.
- *   - Right arrow -> take the current kanji out of the list (practiced).
- *   - The remaining kanji can be shuffled, sorted back into the original order
- *     or reset to the full list at any time, and the list can be changed at any
- *     time from the picker in the top bar or from the "other lists" button.
+ *   - The current character is the only thing on the card; click it to reveal
+ *     its data (meanings and readings for kanji, reading and notes for kana),
+ *     click again to hide them.
+ *   - Left arrow  -> move the current character to the end of the remaining list.
+ *   - Right arrow -> take the current character out of the list (practiced).
+ *   - The remaining characters can be shuffled, sorted back into the original
+ *     order or reset to the full list at any time, and the list can be changed
+ *     at any time from the picker in the top bar or from the "change list" button.
  */
 (function () {
   'use strict';
 
   var STORAGE_PREFIX = 'kanji-flash-cards:v1:';
   var LAST_LIST_KEY = STORAGE_PREFIX + 'last';
-  var DETAILS_SCRIPTS = { joyo: 'js/data/details-joyo.js', jlpt: 'js/data/details-jlpt.js' };
-  var GROUP_LABELS = { jlpt: 'JLPT', joyo: 'Jōyō' };
-  var GROUP_ORDER = ['jlpt', 'joyo'];
+  var DETAILS_SCRIPTS = {
+    kana: 'js/data/details-kana.js',
+    joyo: 'js/data/details-joyo.js',
+    jlpt: 'js/data/details-jlpt.js'
+  };
+  var GROUP_LABELS = { kana: 'Kana', jlpt: 'JLPT', joyo: 'Jōyō' };
+  var GROUP_ORDER = ['kana', 'jlpt', 'joyo'];
+
+  // The four lines of the card, per group. A null value hides that line.
+  var DETAIL_FIELDS = {
+    joyo: [
+      { label: 'Meanings', value: 'm' },
+      { label: 'On\u2019yomi', value: 'on', kana: true },
+      { label: 'Kun\u2019yomi', value: 'kun', kana: true },
+      { label: 'Strokes', strokes: true }
+    ],
+    jlpt: [
+      { label: 'Meanings', value: 'm' },
+      { label: 'On\u2019yomi', value: 'on', kana: true },
+      { label: 'Kun\u2019yomi', value: 'kun', kana: true },
+      { label: 'Strokes', strokes: true }
+    ],
+    kana: [
+      { label: 'Reading', value: 'r' },
+      { label: 'Notes', value: 'm' },
+      null,
+      null
+    ]
+  };
 
   var lists = window.KANJI_LISTS || [];
   var details = window.KANJI_DETAILS || (window.KANJI_DETAILS = {});
@@ -25,9 +52,9 @@
   var el = {};
   var state = {
     list: null, // active entry of KANJI_LISTS
-    order: [], // the list exactly as published
-    queue: [], // kanji still to practice
-    practiced: [], // kanji already taken out of the queue
+    order: [], // the list exactly as published (one entry per card)
+    queue: [], // cards still to practice
+    practiced: [], // cards already taken out of the queue
     revealed: false
   };
 
@@ -39,6 +66,10 @@
 
   function plural(count, singular, many) {
     return count + ' ' + (count === 1 ? singular : many);
+  }
+
+  function unit() {
+    return state.list && state.list.group === 'kana' ? 'kana' : 'kanji';
   }
 
   function shuffleInPlace(items) {
@@ -89,7 +120,7 @@
       store.setItem(LAST_LIST_KEY, state.list.id);
       store.setItem(
         STORAGE_PREFIX + state.list.id,
-        JSON.stringify({ q: state.queue.join(''), p: state.practiced.join('') })
+        JSON.stringify({ q: state.queue, p: state.practiced })
       );
     } catch (error) {
       /* quota or disabled storage: progress is simply not remembered */
@@ -121,18 +152,18 @@
   }
 
   function keepKnown(value, list) {
-    if (typeof value !== 'string') {
+    if (!Array.isArray(value)) {
       return [];
     }
     var known = knownCharacters(list);
-    return value.split('').filter(function (kanji) {
-      return known[kanji] === true;
+    return value.filter(function (item) {
+      return typeof item === 'string' && known[item] === true;
     });
   }
 
-  /* Looking a kanji up in the published list is O(n) with String#indexOf, and
-     the saved sessions of every list are validated when the picker opens, so
-     the characters of each list are indexed once and kept around. */
+  /* Looking a card up in the published list is O(n) with Array#indexOf, and the
+     saved sessions of every list are validated when the picker opens, so the
+     entries of each list are indexed once and kept around. */
   function knownCharacters(list) {
     if (!list.known) {
       list.known = {};
@@ -148,7 +179,7 @@
   function openList(list) {
     saveSession();
     state.list = list;
-    state.order = list.kanjis.split('');
+    state.order = list.kanjis.slice();
     var saved = loadSession(list);
     state.queue = saved ? saved.queue : state.order.slice();
     state.practiced = saved ? saved.practiced : [];
@@ -269,7 +300,7 @@
     el.progressFill.style.width = percent + '%';
     el.progressBar.setAttribute('aria-valuenow', String(percent));
     el.progressDone.textContent = plural(state.practiced.length, 'practiced', 'practiced');
-    el.progressLeft.textContent = plural(state.queue.length, 'kanji left', 'kanji left');
+    el.progressLeft.textContent = plural(state.queue.length, unit(), unit() + ' left');
 
     el.flashcard.disabled = finished;
     el.flashcard.hidden = finished;
@@ -279,7 +310,7 @@
       el.cardKanji.textContent = '';
       el.cardDetails.hidden = true;
       el.flashcard.setAttribute('aria-expanded', 'false');
-      el.finishedText.textContent = 'You practiced all ' + plural(total, 'kanji', 'kanji') + ' of ' + list.label + '.';
+      el.finishedText.textContent = 'You practiced all ' + plural(total, unit(), unit()) + ' of ' + list.label + '.';
       el.finishedKanji.textContent = state.practiced.join(' ');
       el.reviewPracticed.disabled = !state.practiced.length;
     } else {
@@ -299,37 +330,55 @@
 
   function renderDetails(kanji) {
     var entry = (details[state.list.group] || {})[kanji] || {};
-    el.detailMeanings.textContent = entry.m || 'no meaning listed';
-    el.detailOnyomi.textContent = entry.on || '-';
-    el.detailKunyomi.textContent = entry.kun || '-';
-    el.detailStrokes.textContent = entry.s ? plural(entry.s, 'stroke', 'strokes') : '-';
-    el.detailOnyomi.setAttribute('data-kana', 'true');
-    el.detailKunyomi.setAttribute('data-kana', 'true');
+    var fields = DETAIL_FIELDS[state.list.group] || DETAIL_FIELDS.joyo;
+
+    for (var i = 0; i < 4; i++) {
+      var field = fields[i];
+      var row = el.detailRows[i];
+      if (!field) {
+        row.hidden = true;
+        continue;
+      }
+      row.hidden = false;
+      el.detailLabels[i].textContent = field.label;
+      if (field.strokes) {
+        el.detailValues[i].textContent = entry.s ? plural(entry.s, 'stroke', 'strokes') : '-';
+      } else {
+        el.detailValues[i].textContent = entry[field.value] || '-';
+      }
+      if (field.kana) {
+        el.detailValues[i].classList.add('detail__value--kana');
+      } else {
+        el.detailValues[i].classList.remove('detail__value--kana');
+      }
+    }
 
     el.cardDetails.hidden = !state.revealed;
     el.flashcard.setAttribute('aria-expanded', state.revealed ? 'true' : 'false');
     el.flashcard.setAttribute(
       'aria-label',
-      'Kanji ' + kanji + '. ' + (state.revealed ? 'Hide' : 'Show') + ' its meanings and readings.'
+      state.list.group === 'kana' ? characterName(kanji) : 'Kanji ' + kanji
     );
+  }
+
+  function characterName(kanji) {
+    var entry = (details[state.list.group] || {})[kanji] || {};
+    return 'Kana ' + kanji + (entry.r ? ', read ' + entry.r : '');
   }
 
   /* -------------------------------------------------------------- list picker */
 
   function buildPicker() {
-    var targets = { jlpt: el.pickerJlpt, joyo: el.pickerJoyo };
+    var targets = { kana: el.pickerKana, jlpt: el.pickerJlpt, joyo: el.pickerJoyo };
     var selectGroups = {};
 
     el.pickerSelect.innerHTML = '';
-    el.pickerJlpt.innerHTML = '';
-    el.pickerJoyo.innerHTML = '';
-
-    GROUP_ORDER.forEach(function (group) {
+    Object.keys(targets).forEach(function (group) {
+      targets[group].innerHTML = '';
       var selectGroup = document.createElement('optgroup');
       selectGroup.label = GROUP_LABELS[group];
       el.pickerSelect.appendChild(selectGroup);
       selectGroups[group] = selectGroup;
-      targets[group].innerHTML = '';
     });
 
     lists.forEach(function (list) {
@@ -446,6 +495,7 @@
 
   function cacheElements() {
     el.picker = $('picker');
+    el.pickerKana = $('picker-kana-list');
     el.pickerJlpt = $('picker-jlpt-list');
     el.pickerJoyo = $('picker-joyo-list');
     el.study = $('study');
@@ -458,10 +508,9 @@
     el.flashcard = $('flashcard');
     el.cardKanji = $('card-kanji');
     el.cardDetails = $('card-details');
-    el.detailMeanings = $('detail-meanings');
-    el.detailOnyomi = $('detail-onyomi');
-    el.detailKunyomi = $('detail-kunyomi');
-    el.detailStrokes = $('detail-strokes');
+    el.detailRows = [$('detail-row-1'), $('detail-row-2'), $('detail-row-3'), $('detail-row-4')];
+    el.detailLabels = [$('detail-label-1'), $('detail-label-2'), $('detail-label-3'), $('detail-label-4')];
+    el.detailValues = [$('detail-value-1'), $('detail-value-2'), $('detail-value-3'), $('detail-value-4')];
     el.finished = $('finished');
     el.finishedText = $('finished-text');
     el.finishedKanji = $('finished-kanji');

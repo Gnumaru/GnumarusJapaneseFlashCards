@@ -16,6 +16,28 @@ KANJIDIC2 is the property of the Electronic Dictionary Research and Development
 Group and is used in conformance with the Group's
 [licence](https://www.edrdg.org/edrdg/licence.html).
 
+## Kana
+
+The four kana lists follow the official 五十音 (gojūon) table and are built from
+the tables in `build-data.py`; no upstream file is used for them.
+
+* **Hiragana** and **Katakana** hold the 46 basic kana, row by row: the five
+  vowels, then か, さ, た, な, は, ま, ら rows, the 3 kana of the や row, わを
+  and ん.
+* **Hiragana extras** and **Katakana extras** hold the voiced and semi-voiced
+  rows (が ざ だ ば ぱ), the small kana, the sokuon っ/ッ, the long vowel mark
+  ー, the archaic ゐゑ / ヰヱ and, in katakana only, the yōon digraphs (キャ シャ チャ …)
+  and the extended kana used for foreign sounds (ファ ヴァ ティ シェ …).
+* Readings are Hepburn romanisation and the note on each card describes what the
+  kana is for. Katakana yōon and digraphs are stored as one card, so キャ is a
+  single flashcard rather than two.
+
+Note that `を` / `ヲ` is part of the 46 basic kana (it is what makes the count 46
+instead of 45) even though it is rare in modern Japanese; it is flagged in its
+note. The small kana, the sokuon, the long vowel mark, the archaic kana and the
+foreign sound kana are not used in ordinary modern Japanese writing, so they live
+in the "extras" lists instead of the basic ones.
+
 ## How the Jōyō grades are built
 
 * **Grades 1–6** are the official 学年別漢字配当表 (elementary school) content: the

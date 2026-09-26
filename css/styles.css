@@ -382,10 +382,9 @@ h3 {
   color: var(--ink);
 }
 
-.detail__value[data-kana="true"] {
+.detail__value--kana {
   font-family: var(--font-kanji);
   font-size: 1.15rem;
-  color: var(--ink);
 }
 
 .flashcard__tip {

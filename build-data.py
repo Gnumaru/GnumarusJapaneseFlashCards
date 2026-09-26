@@ -77,6 +77,79 @@ KYUJITAI_FORMS = ["剝", "塡", "頰"]
 # for a learner.
 MEANING_NOISE = re.compile(r"radical \(no\.\s*\d+\)")
 
+# ---------------------------------------------------------------- kana tables
+#
+# The kana follow the official gojūon (五十音) table. Each row below gives the
+# hiragana, the katakana, the Hepburn reading of the five vowels
+# (a, i, u, e, o - the y row only has a, u and o) and a short note about the
+# sound the row represents.
+GOJUON = [
+    ("", "あいうえお", "アイウエオ", "a i u e o", "vowel"),
+    ("k", "かきくけこ", "カキクケコ", "ka ki ku ke ko", "voiceless velar stop (k)"),
+    ("g", "がぎぐげご", "ガギグゲゴ", "ga gi gu ge go", "voiced velar stop (g), the dakuten of the k row"),
+    ("s", "さしすせそ", "サシスセソ", "sa shi su se so", "voiceless alveolar fricative (s, sh)"),
+    ("z", "ざじずぜぞ", "ザジズゼゾ", "za ji zu ze zo", "voiced alveolar fricative (z, j), the dakuten of the s row"),
+    ("t", "たちつてと", "タチツテト", "ta chi tsu te to", "voiceless alveolar stop (t, ch, ts)"),
+    ("d", "だぢづでど", "ダヂヅデド", "da ji zu de do", "voiced alveolar stop (d, j, zu), the dakuten of the t row"),
+    ("n", "なにぬねの", "ナニヌネノ", "na ni nu ne no", "nasal (n)"),
+    ("h", "はひふへほ", "ハヒフヘホ", "ha hi fu he ho", "voiceless glottal fricative (h, f)"),
+    ("b", "ばびぶべぼ", "バビブベボ", "ba bi bu be bo", "voiced glottal fricative (b), the dakuten of the h row"),
+    ("p", "ぱぴぷぺぽ", "パピプペポ", "pa pi pu pe po", "semi-voiced glottal fricative (p), the handakuten of the h row"),
+    ("m", "まみむめも", "マミムメモ", "ma mi mu me mo", "nasal (m)"),
+    ("y", "やゆよ", "ヤユヨ", "ya yu yo", "palatal glide (y)"),
+    ("r", "らりるれろ", "ラリルレロ", "ra ri ru re ro", "liquid (r)"),
+    ("w", "わを", "ワヲ", "wa wo", "glide (w); wo is rare and only survives in ヲン (won), literary Japanese and proper names"),
+    ("", "ん", "ン", "n", "syllabic n: m, n or ng depending on the following sound"),
+]
+
+# Rows that are not part of the 46 basic kana.
+VOICED_ROWS = ["g", "z", "d", "b", "p"]
+
+# Small kana, identical in both syllabaries.
+SMALL_KANA = [("ぁ", "ァ", "a"), ("ぃ", "ィ", "i"), ("ぅ", "ゥ", "u"), ("ぇ", "ェ", "e"), ("ぉ", "ォ", "o"),
+              ("ゃ", "ャ", "ya"), ("ゅ", "ュ", "yu"), ("ょ", "ョ", "yo"), ("ゎ", "ヮ", "wa")]
+
+SMALL_NOTE = "small kana: it is only used inside a digraph, such as きゃ (kya)"
+SOKUON = ("っ", "ッ", "tsu", "sokuon: it doubles the consonant that follows, such as きって (kitte)")
+CHOONPU = ("ー", None, "-", "chōonpu: the long vowel mark, it lengthens the vowel before it (e.g. ケーキ)")
+
+# Kana that dropped out of everyday Japanese.
+ARCHAIC_HIRAGANA = [("ゐ", "i", "archaic: only used in proper names"), ("ゑ", "e", "archaic: only used in proper names")]
+ARCHAIC_KATAKANA = [
+    ("ヰ", "i", "archaic: only used in proper names"),
+    ("ヱ", "e", "archaic: only used in proper names"),
+]
+
+# Katakana yōon: a small y + vowel, they only exist in digraphs.
+YOON = [
+    ("キャ", "kya"), ("キュ", "kyu"), ("キョ", "kyo"),
+    ("ギャ", "gya"), ("ギュ", "gyu"), ("ギョ", "gyo"),
+    ("シャ", "sha"), ("シュ", "shu"), ("ショ", "sho"),
+    ("ジャ", "ja"), ("ジュ", "ju"), ("ジョ", "jo"),
+    ("チャ", "cha"), ("チュ", "chu"), ("チョ", "cho"),
+    ("ニャ", "nya"), ("ニュ", "nyu"), ("ニョ", "nyo"),
+    ("ヒャ", "hya"), ("ヒュ", "hyu"), ("ヒョ", "hyo"),
+    ("ビャ", "bya"), ("ビュ", "byu"), ("ビョ", "byo"),
+    ("ピャ", "pya"), ("ピュ", "pyu"), ("ピョ", "pyo"),
+    ("ミャ", "mya"), ("ミュ", "myu"), ("ミョ", "myo"),
+    ("リャ", "rya"), ("リュ", "ryu"), ("リョ", "ryo"),
+]
+
+YOON_NOTE = "yōon digraph: a palatalised y followed by a vowel, such as きゃ (kya)"
+
+# Katakana that exist only to write sounds of other languages.
+FOREIGN_KATAKANA = [
+    ("ファ", "fa"), ("フィ", "fi"), ("フェ", "fe"), ("フォ", "fo"),
+    ("ウィ", "wi"), ("ウェ", "we"), ("ウォ", "wo"),
+    ("ヴァ", "va"), ("ヴィ", "vi"), ("ヴ", "vu"), ("ヴェ", "ve"), ("ヴォ", "vo"),
+    ("ツァ", "tsa"), ("ツィ", "tsi"), ("ツェ", "tse"), ("ツォ", "tso"),
+    ("シェ", "she"), ("ジェ", "je"), ("チェ", "che"),
+    ("ティ", "ti"), ("ディ", "di"), ("トゥ", "tu"), ("ドゥ", "du"),
+    ("クヮ", "kwa"), ("グヮ", "gwa"),
+]
+
+FOREIGN_NOTE = "extended katakana: it is only used to write sounds from other languages, such as ファイル (fairu)"
+
 
 # ------------------------------------------------------------------ downloading
 
@@ -239,6 +312,67 @@ def jlpt_lists() -> list[list[str]]:
     return lists
 
 
+# ------------------------------------------------------------------ kana lists
+
+def kana_lists() -> tuple[list[list[str]], dict[str, dict]]:
+    """Return the four kana lists and their reading/notes, grouped by syllabary."""
+    details: dict[str, dict] = {}
+    lists: dict[str, list[str]] = {"hiragana": [], "hiragana-extra": [], "katakana": [], "katakana-extra": []}
+
+    def add(list_name: str, characters: str, reading: str | list[str], note: str) -> None:
+        """Add one or more kana to a list.
+
+        `reading` is either a single reading for the whole `characters` string
+        (a digraph such as キャ) or one reading per character (a gojūon row).
+        """
+        pairs = [(characters, reading)] if isinstance(reading, str) else list(zip(characters, reading))
+        for character, value in pairs:
+            if character in details:
+                raise SystemExit(f"kana {character} is in more than one list")
+            details[character] = {"r": value, "m": note}
+            lists[list_name].append(character)
+
+    # The 46 basic kana, in gojūon order.
+    for row_key, hiragana, katakana, readings, note in GOJUON:
+        if row_key in VOICED_ROWS:
+            continue
+        row = readings.split()
+        add("hiragana", hiragana, row, note)
+        add("katakana", katakana, row, note)
+    for name, kanjis in (("Hiragana", lists["hiragana"]), ("Katakana", lists["katakana"])):
+        if len(kanjis) != 46:
+            raise SystemExit(f"the basic {name} table has {len(kanjis)} kana, expected 46")
+
+    # Dakuten and handakuten rows.
+    for row_key, hiragana, katakana, readings, note in GOJUON:
+        if row_key in VOICED_ROWS:
+            add("hiragana-extra", hiragana, readings.split(), note)
+            add("katakana-extra", katakana, readings.split(), note)
+
+    # Small kana, sokuon, archaic kana and the long vowel mark.
+    for hiragana, katakana, reading in SMALL_KANA:
+        add("hiragana-extra", hiragana, reading, SMALL_NOTE)
+        add("katakana-extra", katakana, reading, SMALL_NOTE)
+    add("hiragana-extra", SOKUON[0], SOKUON[2], SOKUON[3])
+    add("katakana-extra", SOKUON[1], SOKUON[2], SOKUON[3])
+    add("katakana-extra", CHOONPU[0], CHOONPU[2], CHOONPU[3])
+    for character, reading, note in ARCHAIC_HIRAGANA:
+        add("hiragana-extra", character, reading, note)
+    for character, reading, note in ARCHAIC_KATAKANA:
+        add("katakana-extra", character, reading, note)
+
+    # Katakana only: yōon digraphs and the extended kana for foreign sounds.
+    for character, reading in YOON:
+        add("katakana-extra", character, reading, YOON_NOTE)
+    for character, reading in FOREIGN_KATAKANA:
+        add("katakana-extra", character, reading, FOREIGN_NOTE)
+
+    ordered = [lists["hiragana"], lists["hiragana-extra"], lists["katakana"], lists["katakana-extra"]]
+    for name, kanjis in zip(["Hiragana", "Hiragana extras", "Katakana", "Katakana extras"], ordered):
+        print(f"  {name}: {len(kanjis)} kana")
+    return ordered, details
+
+
 # ------------------------------------------------------------------ write files
 
 def encode(character: str, entry: dict) -> str:
@@ -250,6 +384,10 @@ def encode(character: str, entry: dict) -> str:
         + (f',"s":{entry["s"]}' if entry.get("s") else "")
         + "}"
     )
+
+
+def encode_kana(character: str, entry: dict) -> str:
+    return f'"{character}":{{"r":"{entry["r"]}","m":"{entry["m"]}"}}'
 
 
 def write_details(name: str, kanjis: list[str], dictionary: dict) -> None:
@@ -269,6 +407,17 @@ def write_details(name: str, kanjis: list[str], dictionary: dict) -> None:
     print(f"  wrote js/data/details-{name}.js ({(len(text) / 1024):.0f} KB)")
 
 
+def write_kana_details(details: dict[str, dict]) -> None:
+    body = ",\n".join(encode_kana(character, details[character]) for character in sorted(details, key=lambda k: (len(k), k)))
+    text = (
+        "// Generated by build-data.py - do not edit by hand.\n"
+        "// Hepburn readings and notes for the kana, from the official gojūon (五十音) table.\n"
+        'window.KANJI_DETAILS["kana"] = {\n' + body + "\n};\n"
+    )
+    (OUT_DATA / "details-kana.js").write_text(text, encoding="utf-8")
+    print(f"  wrote js/data/details-kana.js ({(len(text) / 1024):.0f} KB)")
+
+
 YEAR_DESCRIPTIONS = {
     1: "1st grade",
     2: "2nd grade",
@@ -285,21 +434,36 @@ YEAR_DESCRIPTIONS = {
 }
 
 
-def write_lists(joyo: list[list[str]], jlpt: list[list[str]]) -> None:
+KANA_LIST_META = [
+    ("kana-hiragana", "Hiragana", "the 46 basic kana"),
+    ("kana-hiragana-extra", "Hiragana extras", "dakuten, handakuten, small and archaic kana"),
+    ("kana-katakana", "Katakana", "the 46 basic kana"),
+    ("kana-katakana-extra", "Katakana extras", "dakuten, small, yōon and foreign sound kana"),
+]
+
+
+def write_lists(kana: list[list[str]], joyo: list[list[str]], jlpt: list[list[str]]) -> None:
+    # Kana are stored one string per item so that digraphs such as キャ stay
+    # together; kanji lists hold one character per item.
     entries: list[str] = []
-    for level, kanjis in zip(["N5", "N4", "N3", "N2", "N1"], jlpt):
+
+    def add(list_id: str, group: str, label: str, hint: str, items: list[str]) -> None:
         entries.append(
-            f'  {{ id: "jlpt-{level.lower()}", group: "jlpt", label: "JLPT {level}",'
-            f' hint: "{len(kanjis)} kanji", kanjis: "{"".join(kanjis)}" }}'
+            f'  {{ id: "{list_id}", group: "{group}", label: "{label}", hint: "{hint}",'
+            f" kanjis: {json.dumps(items, ensure_ascii=False, separators=(',', ':'))} }}"
         )
-    for year, kanjis in enumerate(joyo, start=1):
-        entries.append(
-            f'  {{ id: "joyo-{year}", group: "joyo", label: "Jōyō grade {year}",'
-            f' hint: "{YEAR_DESCRIPTIONS[year]} - {len(kanjis)} kanji", kanjis: "{"".join(kanjis)}" }}'
-        )
+
+    for (list_id, label, hint), characters in zip(KANA_LIST_META, kana):
+        add(list_id, "kana", label, f"{hint} - {len(characters)} kana", characters)
+    for level, characters in zip(["N5", "N4", "N3", "N2", "N1"], jlpt):
+        add(f"jlpt-{level.lower()}", "jlpt", f"JLPT {level}", f"{len(characters)} kanji", characters)
+    for year, characters in enumerate(joyo, start=1):
+        add(f"joyo-{year}", "joyo", f"Jōyō grade {year}", f"{YEAR_DESCRIPTIONS[year]} - {len(characters)} kanji", characters)
+
     text = (
         "// Generated by build-data.py - do not edit by hand.\n"
-        "// Jōyō order follows the official 常用漢字表; JLPT order follows kanji frequency.\n"
+        "// Jōyō order follows the official 常用漢字表; JLPT order follows kanji frequency;\n"
+        "// kana order follows the official 五十音 (gojūon) table.\n"
         "window.KANJI_LISTS = [\n" + ",\n".join(entries) + "\n];\n"
     )
     (OUT_DATA / "lists.js").write_text(text, encoding="utf-8")
@@ -328,13 +492,15 @@ def main() -> int:
     print("Building lists ...")
     joyo = joyo_lists(kanken, official_order, official_grades)
     jlpt = jlpt_lists()
+    kana, kana_details = kana_lists()
 
     print("Writing data files ...")
     joyo_kanji = {kanji for group in joyo for kanji in group}
     jlpt_kanji = {kanji for group in jlpt for kanji in group}
     write_details("joyo", sorted(joyo_kanji, key=ord), dictionary)
     write_details("jlpt", sorted(jlpt_kanji, key=ord), dictionary)
-    write_lists(joyo, jlpt)
+    write_kana_details(kana_details)
+    write_lists(kana, joyo, jlpt)
     write_licenses()
     return 0
 
