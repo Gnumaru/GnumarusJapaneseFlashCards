@@ -356,11 +356,58 @@ h3 {
 
 .flashcard__details {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.7rem;
   width: min(100%, 34rem);
   text-align: left;
   border-top: 1px solid var(--line);
   padding-top: 0.9rem;
+}
+
+/* Example sentence --------------------------------------------------------- */
+
+.example {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 0.25rem 0.9rem;
+  align-items: baseline;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.example__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--accent);
+}
+
+.example__text {
+  font-family: var(--font-kanji);
+  font-size: 1.2rem;
+  line-height: 2.1;
+  color: var(--ink);
+  word-break: keep-all;
+}
+
+.example__note {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  line-height: 1.4;
+}
+
+/* Furigana sits above the character; browsers that do not support <ruby> fall
+   back to the parentheses in <rp>. */
+ruby {
+  ruby-position: over;
+}
+
+rt {
+  font-size: 0.5em;
+  color: var(--ink-soft);
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 .detail {
@@ -574,9 +621,15 @@ kbd {
 }
 
 @media (max-width: 32rem) {
-  .detail {
+  .detail,
+  .example {
     grid-template-columns: 1fr;
     gap: 0 0;
+  }
+
+  .example__text {
+    font-size: 1.05rem;
+    line-height: 2;
   }
 
   .field {

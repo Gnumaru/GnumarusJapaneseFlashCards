@@ -11,6 +11,8 @@ full license text is in [`DATA-LICENSE.txt`](DATA-LICENSE.txt).
 | Jonathan Waller's JLPT kanji levels, packaged as [OpenJLPT](https://github.com/evanclan/OpenJLPT) | JLPT N5–N1 membership and kanji frequency | <https://www.tanos.co.uk/jlpt/> | CC BY-SA 4.0 |
 | [List of jōyō kanji](https://en.wikipedia.org/wiki/List_of_j%C5%8Dy%C5%8D_kanji) on Wikipedia | The 2136 Jōyō characters in the order of the official 常用漢字表, and the elementary school grade of each | Wikimedia Foundation | CC BY-SA 4.0 |
 | [kanken-json](https://github.com/hoffmannjp/kanken-json) | Kanji Kentei (漢検) grade lists, used to spread the 1110 secondary school Jōyō kanji over school years 7–12 | Benjamin Hoffmann | MIT |
+| [Tatoeba](https://tatoeba.org) | One short example sentence with furigana per kanji, preferring the Tanaka Corpus (textbook) sentences | Tatoeba contributors | CC BY 2.0 FR |
+| [JMdict](https://www.edrdg.org/wiki/JMdict_Project.html) | A dictionary word for the rare kanji that appear in no example sentence | Electronic Dictionary Research and Development Group | CC BY-SA 4.0 (EDRDG licence) |
 
 KANJIDIC2 is the property of the Electronic Dictionary Research and Development
 Group and is used in conformance with the Group's
@@ -59,3 +61,29 @@ The Japan Foundation does not publish official JLPT kanji lists, so the N5–N1
 membership comes from Jonathan Waller's widely used community lists, the same
 source OpenJLPT uses. KANJIDIC2's own `jlpt` field (the pre-2010 four level
 system) is deliberately not used.
+
+## Example sentences
+
+Every kanji has one short example sentence, taken from Tatoeba and stored with
+the furigana that a Tatoeba contributor attached to it. The sentences are
+selected in tiers, and the first tier that has anything for a kanji wins:
+
+1. a Tanaka Corpus sentence — these come from Japanese textbooks and are by far
+   the simplest Japanese sentences available;
+2. any other short sentence with complete furigana;
+3. a longer sentence, or one where not every kanji is annotated;
+4. anything else that is a clean sentence.
+
+Sentences are ranked inside a tier by length, by how many different kanji they
+use, and with a bonus when the kanji of the card stands alone as its own word
+rather than buried inside a compound.
+
+The sentences are stored as ruby markup with the words separated by spaces. The
+spacing is a learning aid — Japanese is written without spaces — and is
+produced at build time by [janome](https://mecab.github.io/), which is used as a
+library only and is not part of the app.
+
+174 of the 2383 kanji appear in no usable Tatoeba sentence. For those, a
+JMdict word is shown instead, marked with the word "word example" on the card.
+Five Jōyō characters (崚 彪 晟 舜 赳) are in neither corpus, so for them the
+card shows the character with its own reading from KANJIDIC2.

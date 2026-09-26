@@ -18,12 +18,21 @@ Data sources
   used to split the 1110 secondary school Jōyō kanji across school years 7-12,
   since the Ministry of Education publishes no per-year table for secondary
   school.
+* Tatoeba example sentences with furigana, CC BY 2.0 FR,
+  https://tatoeba.org - short Japanese sentences, preferring the Tanaka Corpus
+  (textbook sentences) that Tatoeba also publishes as jpn_indices.
+* JMdict / EDICT (EDRDG), CC BY-SA 4.0, https://www.edrdg.org/wiki/JMdict_Project.html
+  - used as a fallback for the few kanji that appear in no Tatoeba sentence.
+* janome (LGPL) for word segmentation, so the example sentences can be spaced
+  out for learners. Optional: without it the examples are still generated, just
+  without the word spacing.
 
 Run with:  python3 build-data.py
 """
 
 from __future__ import annotations
 
+import bz2
 import html
 import json
 import re
@@ -41,7 +50,10 @@ KANJIDIC2_URL = "https://raw.githubusercontent.com/WordBrewery/kanjidic2-json/ma
 KANKEN_URL = "https://raw.githubusercontent.com/hoffmannjp/kanken-json/main/kanken.json"
 WIKIPEDIA_URL = "https://en.wikipedia.org/w/index.php?title={title}&action=raw"
 OPENJLPT_URL = "https://raw.githubusercontent.com/evanclan/OpenJLPT/main/data/json/kanji/{level}.json"
+TATOEBA_URL = "https://downloads.tatoeba.org/exports/per_language/jpn/{name}.tsv.bz2"
+JMDICT_URL = "https://github.com/scriptin/jmdict-simplified/releases/download/3.6.2%2B20260921173324/jmdict-eng-3.6.2%2B20260921173324.json.tgz"
 CC_BY_SA_URL = "https://creativecommons.org/licenses/by-sa/4.0/legalcode.txt"
+CC_BY_FR_URL = "https://creativecommons.org/licenses/by/2.0/fr/legalcode"
 
 JOYO_TITLE = "List of_jōyō_kanji"
 JOYO_TOTAL = 2136
@@ -149,6 +161,305 @@ FOREIGN_KATAKANA = [
 ]
 
 FOREIGN_NOTE = "extended katakana: it is only used to write sounds from other languages, such as ファイル (fairu)"
+
+# ------------------------------------------------------------- example sentences
+#
+# Every kanji gets a short example sentence. Two things make the sentences
+# readable for a learner:
+#
+# * furigana, taken from the Tatoeba "Hrkt" transcription of the sentence, which
+#   is written as [漢字|よみ|...per character readings] and covers every kanji;
+# * word spacing. Real Japanese does not put spaces between words, so the text is
+#   segmented and the words are separated with a space. This is a learning aid,
+#   deliberately not how the language is written.
+#
+# Sentences come from Tatoeba, preferring the Tanaka Corpus: those are the
+# textbook sentences and by far the simplest ones available.
+
+# A furigana group: base, then the reading of the base, then one reading per
+# character of the base (only the second field is needed to render ruby text).
+# Tatoeba also uses {...} for the same thing, and occasionally mixes both.
+FURIGANA = re.compile(r"[\[{]([^\]}|]*)\|([^\]}|]*)(?:\|[^\]}]*)?[}\]]")
+KANJI_CHAR = re.compile(r"[\u3400-\u9fff\uf900-\ufaff]")
+
+# Sentences that are not clean prose: markup, URLs, dates, ellipsis spam...
+NOISE = re.compile(r"[<>{}~|/\\=*&#]|https?://|\d{4}-\d{2}|…{2,}")
+# Punctuation, used to keep word spacing from running across a sentence break.
+PUNCTUATION = "。、！？!?,.「」『』…・"
+
+TANAKA_URL = "https://downloads.tatoeba.org/exports/jpn_indices.tar.bz2"
+
+
+def furigana_segments(transcription: str) -> list[tuple[str, str | None]]:
+    """Split a Tatoeba Hrkt transcription into (text, reading|None) pairs."""
+    out: list[tuple[str, str | None]] = []
+    pos = 0
+    for match in FURIGANA.finditer(transcription):
+        if match.start() > pos:
+            out.append((transcription[pos : match.start()], None))
+        out.append((match.group(1), match.group(2)))
+        pos = match.end()
+    if pos < len(transcription):
+        out.append((transcription[pos:], None))
+    return out
+
+
+def furigana_plain(transcription: str) -> str:
+    """The sentence text with the furigana markup removed."""
+    return "".join(text for text, _reading in furigana_segments(transcription))
+
+
+def ruby_spans(text: str, segments: list[tuple[str, str | None]]) -> list[tuple[int, int, str]]:
+    """Where the annotated kanji runs sit inside `text`: (start, end, reading)."""
+    spans = []
+    pos = 0
+    for piece, reading in segments:
+        if reading:
+            spans.append((pos, pos + len(piece), reading))
+        pos += len(piece)
+    return spans
+
+
+def load_tokenizer():
+    """janome, if it is installed. Word spacing is skipped without it."""
+    try:
+        from janome.tokenizer import Tokenizer
+
+        return Tokenizer()
+    except ImportError:
+        return None
+
+
+def spaced_example(tokenizer, text: str, segments: list[tuple[str, str | None]]) -> str:
+    """Render one sentence as ruby HTML with words separated by spaces.
+
+    The sentence is segmented word by word; a word that is annotated with
+    furigana is wrapped in <ruby>. Kana that continue a word (the okurigana of a
+    verb or adjective) is joined back onto the word it belongs to, so 勉強し
+    ている reads as one word instead of three.
+    """
+    spans = ruby_spans(text, segments)
+    if not spans or furigana_plain("".join(piece for piece, _reading in segments)) != text:
+        return None
+
+    pieces: list[list] = []
+    if tokenizer is None:
+        # No segmenter available: split the sentence into its annotated runs and
+        # the kana in between, and give each of them its own word. The example is
+        # still readable, the spacing is just coarser.
+        pos = 0
+        for start, end, reading in spans:
+            if start > pos:
+                pieces.append([text[pos:start], None, "名詞"])
+            pieces.append([text[start:end], reading, "名詞"])
+            pos = end
+        if pos < len(text):
+            pieces.append([text[pos:], None, "名詞"])
+    else:
+        offset = 0
+        for token in tokenizer.tokenize(text):
+            surface = token.surface
+            if not surface.strip():
+                offset += len(surface)
+                continue
+            start, end = offset, offset + len(surface)
+            offset = end
+            # Keep the fields joined with no separator: the checks below look
+            # for whole values such as 助詞 inside the string.
+            part_of_speech = "".join(token.part_of_speech or ())
+            # Cut the word wherever a furigana run starts or ends, so that
+            # 月見て becomes <ruby>月</ruby>見て rather than losing the reading.
+            cuts = sorted(
+                {start, end}
+                | {s for s, _e, _r in spans if start < s < end}
+                | {e for _s, e, _r in spans if start < e < end}
+            )
+            for a, b in zip(cuts, cuts[1:]):
+                reading = next((r for s, e, r in spans if s <= a and b <= e), None)
+                pieces.append([text[a:b], reading, part_of_speech])
+
+    # Okurigana belongs to the word it follows, so 勉強 + して + います and
+    # 眠ら + なければ + なりません are single words. janome splits the okurigana
+    # off, so runs are glued back together unless the run starts a new
+    # grammatical word.
+    #
+    # A run with furigana is the head of its word (眠 + ら), never the tail, so it
+    # also starts a new word when the previous run was a noun.
+    #
+    # The furigana stays on the kanji it covers, so a word is a list of
+    # (text, reading) runs and only the word boundaries move.
+    # A run with furigana is usually the head of a word, but it can also be the
+    # okurigana-side of a verb the segmenter split: 愛して (ruby on 愛) + いる is
+    # really 愛している. When the previous run is a verb, the ruby run continues
+    # it. Otherwise a ruby run always starts a new word.
+    VERB_PARTS = ("動詞", "形容詞")
+    NEW_WORD_PARTS = ("名詞", "助詞", "記号", "接頭詞", "接続詞", "感動詞", "フィラー", "代名詞")
+    # ば / な / ゃ … continue the verb or adjective they follow, so
+    # しなければならない is one word, but は / が / を / に start a new one.
+    CONTINUES_VERB_PARTS = ("接続助詞", "副助詞")
+    words: list[list] = []
+    previous_continues = False  # the previous run is part of a verb phrase
+    for surface, reading, part_of_speech in pieces:
+        previous = words[-1] if words else []
+        previous_text = previous[-1][0] if previous else ""
+        auxiliary = "助詞" in part_of_speech and any(
+            kind in part_of_speech for kind in CONTINUES_VERB_PARTS
+        )
+        starts_word = (
+            surface in PUNCTUATION
+            or not previous_text
+            or previous_text[-1] in PUNCTUATION
+            or (
+                reading is not None
+                and not previous_continues
+            )
+            or (
+                any(part in part_of_speech for part in NEW_WORD_PARTS)
+                and not auxiliary
+                and reading is None
+            )
+        )
+        if previous and not starts_word:
+            previous.append((surface, reading))
+            previous_continues = any(part in part_of_speech for part in VERB_PARTS) or auxiliary
+            continue
+        words.append([(surface, reading)])
+        previous_continues = any(part in part_of_speech for part in VERB_PARTS) or auxiliary
+
+    # A run with furigana becomes <ruby>text<rt>reading</rt></ruby>, everything
+    # else is escaped as is. Runs of the same word are glued together; words are
+    # separated by a space.
+    def render_run(text_run: str, reading: str | None) -> str:
+        if reading:
+            return f"<ruby>{html.escape(text_run)}<rp>(</rp><rt>{html.escape(reading)}</rt><rp>)</rp></ruby>"
+        return html.escape(text_run)
+
+    return " ".join(
+        "".join(render_run(text_run, reading) for text_run, reading in runs if text_run)
+        for runs in words
+        if any(text_run for text_run, _reading in runs)
+    )
+
+
+def load_examples(tokenizer, wanted: set[str]) -> dict[str, dict]:
+    """Pick one short, simple example sentence per kanji."""
+    sentences = {}
+    with bz2.open(fetch(TATOEBA_URL.format(name="jpn_sentences"), "tatoeba-jpn-sentences.tsv.bz2"), "rt", encoding="utf-8") as handle:
+        for line in handle:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) >= 3:
+                sentences[int(parts[0])] = parts[2]
+
+    transcriptions = {}
+    path = fetch(TATOEBA_URL.format(name="jpn_transcriptions"), "tatoeba-jpn-transcriptions.tsv.bz2")
+    with bz2.open(path, "rt", encoding="utf-8") as handle:
+        for line in handle:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) >= 5 and parts[1] == "jpn" and parts[2] == "Hrkt":
+                transcriptions[int(parts[0])] = parts[4]
+
+    # The Tanaka Corpus sentences are the textbook ones: simplest and best for
+    # a beginner, so they win over everything else.
+    textbook = set()
+    with bz2.open(fetch(TANAKA_URL, "tatoeba-jpn-indices.tsv.bz2"), "rt", encoding="utf-8") as handle:
+        for line in handle:
+            head = line.split("\t", 1)[0]
+            if head.isdigit():
+                textbook.add(int(head))
+
+    # Per kanji, per quality tier: textbook sentences first, then any clean short
+    # sentence, then longer ones, then sentences with gaps in the furigana.
+    pools: dict[str, dict[int, list[int]]] = {}
+    for sentence_id, text in sentences.items():
+        transcription = transcriptions.get(sentence_id)
+        if not transcription or not text or NOISE.search(text):
+            continue
+        segments = furigana_segments(transcription)
+        if furigana_plain(transcription) != text:
+            continue  # transcription out of date with the sentence, or malformed markup
+        annotated = {ch for start, end, _r in ruby_spans(text, segments) for ch in text[start:end]}
+        kanji = {ch for ch in text if KANJI_CHAR.match(ch)}
+        if not kanji:
+            continue
+        complete = kanji <= annotated
+        ends_well = text[-1] in "。！？!?"
+        if complete and ends_well and 5 <= len(text) <= 26 and sentence_id in textbook:
+            tier = 0
+        elif complete and ends_well and 4 <= len(text) <= 30:
+            tier = 1
+        elif ends_well and 3 <= len(text) <= 34:
+            tier = 2
+        else:
+            tier = 3
+        for ch in kanji & wanted:
+            pools.setdefault(ch, {}).setdefault(tier, []).append(sentence_id)
+
+    examples: dict[str, dict] = {}
+    for ch, tiers in pools.items():
+        tier = next((t for t in (0, 1, 2, 3) if tiers.get(t)), 3)
+        best = None
+        for sentence_id in tiers[tier]:
+            text = sentences[sentence_id]
+            spans = ruby_spans(text, furigana_segments(transcriptions[sentence_id]))
+            run = next((text[s:e] for s, e, _r in spans if ch in text[s:e]), "")
+            distinct = len({c for c in text if KANJI_CHAR.match(c)})
+            score = tier * 1000 + len(text) + distinct * 2.0
+            score -= 8 if len(run) == 1 else 0  # the kanji alone is the clearest
+            score -= 4 if text.count(ch) == 1 else 0
+            if best is None or score < best[0]:
+                best = (score, sentence_id)
+        sentence_id = best[1]
+        example = spaced_example(tokenizer, sentences[sentence_id], furigana_segments(transcriptions[sentence_id]))
+        if example:
+            examples[ch] = {"ex": example, "ts": 1 if sentence_id in textbook else 0}
+    return examples
+
+
+def jmdict_examples(wanted: set[str], dictionary: dict) -> dict[str, dict]:
+    """A word example for the kanji that no Tatoeba sentence uses.
+
+    Some rare Jōyō characters appear in no everyday sentence at all, so a word
+    from JMdict is used instead. If JMdict has no word either, the kanji is shown
+    with its own reading.
+    """
+    import tarfile
+
+    archive = fetch(JMDICT_URL, "jmdict.json.tgz")
+    examples: dict[str, dict] = {}
+    with tarfile.open(archive, "r:gz") as tar:
+        member = next(m for m in tar.getmembers() if m.name.endswith(".json"))
+        with tar.extractfile(member) as raw:
+            data = json.loads(raw.read().decode("utf-8"))
+    for word in data["words"]:
+        if not wanted:
+            break
+        kanji_forms = [k["text"] for k in (word.get("kanji") or [])]
+        readings = [k["text"] for k in (word.get("kana") or []) if not k.get("tags")]
+        if not kanji_forms or not readings:
+            continue
+        for form in kanji_forms:
+            hits = set(form) & wanted
+            if not hits or len(form) > 4:
+                continue
+            for ch in hits:
+                if ch in examples:
+                    continue
+                reading = readings[0]
+                examples[ch] = {
+                    "ex": f"<ruby>{html.escape(form)}<rp>(</rp><rt>{html.escape(reading)}</rt><rp>)</rp></ruby>",
+                    "w": 1,
+                }
+    # Last resort: nothing in JMdict either, so show the character with its own
+    # reading, taken from KANJIDIC.
+    for ch in sorted(wanted - set(examples)):
+        entry = dictionary.get(ch) or {}
+        readings = entry.get("kun") or entry.get("on") or []
+        reading = readings[0] if readings else ""
+        examples[ch] = {
+            "ex": f"<ruby>{html.escape(ch)}<rp>(</rp><rt>{html.escape(reading)}</rt><rp>)</rp></ruby>",
+            "w": 1,
+        }
+    return examples
 
 
 # ------------------------------------------------------------------ downloading
@@ -375,13 +686,16 @@ def kana_lists() -> tuple[list[list[str]], dict[str, dict]]:
 
 # ------------------------------------------------------------------ write files
 
-def encode(character: str, entry: dict) -> str:
+def encode(character: str, entry: dict, example: dict | None) -> str:
     return (
         f'"{character}":{{'
         f'"m":"{" | ".join(entry["m"])}"'
         f',"on":"{" | ".join(entry["on"])}"'
         f',"kun":"{" | ".join(entry["kun"])}"'
         + (f',"s":{entry["s"]}' if entry.get("s") else "")
+        + (f',"ex":"{example["ex"]}"' if example else "")
+        + (f',"ts":{example["ts"]}' if example and example.get("ts") else "")
+        + (f',"w":{example["w"]}' if example and example.get("w") else "")
         + "}"
     )
 
@@ -390,17 +704,18 @@ def encode_kana(character: str, entry: dict) -> str:
     return f'"{character}":{{"r":"{entry["r"]}","m":"{entry["m"]}"}}'
 
 
-def write_details(name: str, kanjis: list[str], dictionary: dict) -> None:
+def write_details(name: str, kanjis: list[str], dictionary: dict, examples: dict) -> None:
     unknown = [k for k in kanjis if k not in dictionary]
     if unknown:
         raise SystemExit(f"{name}: no dictionary entry for {''.join(unknown)}")
     without_meanings = [k for k in kanjis if not dictionary[k]["m"]]
     if without_meanings:
         print(f"  warning: {name}: {len(without_meanings)} kanji without English meanings")
-    body = ",\n".join(encode(k, dictionary[k]) for k in kanjis)
+    body = ",\n".join(encode(k, dictionary[k], examples.get(k)) for k in kanjis)
     text = (
         "// Generated by build-data.py - do not edit by hand.\n"
         "// Readings, meanings and stroke counts from KANJIDIC2 (EDRDG), CC BY-SA 4.0.\n"
+        "// Example sentences with furigana from Tatoeba, CC BY 2.0 FR.\n"
         f'window.KANJI_DETAILS["{name}"] = {{\n{body}\n}};\n'
     )
     (OUT_DATA / f"details-{name}.js").write_text(text, encoding="utf-8")
@@ -471,9 +786,11 @@ def write_lists(kana: list[list[str]], joyo: list[list[str]], jlpt: list[list[st
 
 
 def write_licenses() -> None:
-    text = fetch(CC_BY_SA_URL, "cc-by-sa-4.0.txt").read_text(encoding="utf-8", errors="replace")
-    (ROOT / "DATA-LICENSE.txt").write_text(text, encoding="utf-8")
-    print("  wrote DATA-LICENSE.txt")
+    share_alike = fetch(CC_BY_SA_URL, "cc-by-sa-4.0.txt").read_text(encoding="utf-8", errors="replace")
+    attribution = fetch(CC_BY_FR_URL, "cc-by-2.0-fr.html").read_text(encoding="utf-8", errors="replace")
+    (ROOT / "DATA-LICENSE.txt").write_text(share_alike, encoding="utf-8")
+    (ROOT / "DATA-LICENSE-CC-BY-2.0-FR.txt").write_text(attribution, encoding="utf-8")
+    print("  wrote DATA-LICENSE.txt and DATA-LICENSE-CC-BY-2.0-FR.txt")
 
 
 # ----------------------------------------------------------------------- main
@@ -494,11 +811,25 @@ def main() -> int:
     jlpt = jlpt_lists()
     kana, kana_details = kana_lists()
 
+    print("Picking example sentences ...")
+    tokenizer = load_tokenizer()
+    if tokenizer is None:
+        print("  note: janome is not installed, so the example sentences will have no word spacing")
+        print("        (pip install janome to get it)")
+    all_kanji = {kanji for group in joyo for kanji in group} | {kanji for group in jlpt for kanji in group}
+    examples = load_examples(tokenizer, all_kanji)
+    print(f"  Tatoeba sentences: {sum(1 for e in examples.values() if not e.get('w'))} of {len(all_kanji)} kanji")
+    missing = all_kanji - set(examples)
+    if missing:
+        fallback = jmdict_examples(missing, dictionary)
+        print(f"  JMdict words for the remaining {len(fallback)} kanji")
+        examples.update(fallback)
+
     print("Writing data files ...")
     joyo_kanji = {kanji for group in joyo for kanji in group}
     jlpt_kanji = {kanji for group in jlpt for kanji in group}
-    write_details("joyo", sorted(joyo_kanji, key=ord), dictionary)
-    write_details("jlpt", sorted(jlpt_kanji, key=ord), dictionary)
+    write_details("joyo", sorted(joyo_kanji, key=ord), dictionary, examples)
+    write_details("jlpt", sorted(jlpt_kanji, key=ord), dictionary, examples)
     write_kana_details(kana_details)
     write_lists(kana, joyo, jlpt)
     write_licenses()

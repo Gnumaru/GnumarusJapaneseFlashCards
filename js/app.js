@@ -332,6 +332,20 @@
     var entry = (details[state.list.group] || {})[kanji] || {};
     var fields = DETAIL_FIELDS[state.list.group] || DETAIL_FIELDS.joyo;
 
+    // Kanji have an example sentence with furigana; kana do not have one.
+    if (entry.ex) {
+      el.exampleRow.hidden = false;
+      // The example is pre-rendered ruby HTML built by build-data.py, so it is
+      // inserted as markup rather than text. Every kanji, reading and space in
+      // it comes from the Tatoeba / JMdict data files of this same origin.
+      el.example.innerHTML = entry.w
+        ? entry.ex + '<span class="example__note">' + (entry.w === 2 ? "word, no example sentence" : "word example") + '</span>'
+        : entry.ex;
+    } else {
+      el.exampleRow.hidden = true;
+      el.example.innerHTML = '';
+    }
+
     for (var i = 0; i < 4; i++) {
       var field = fields[i];
       var row = el.detailRows[i];
@@ -511,6 +525,8 @@
     el.detailRows = [$('detail-row-1'), $('detail-row-2'), $('detail-row-3'), $('detail-row-4')];
     el.detailLabels = [$('detail-label-1'), $('detail-label-2'), $('detail-label-3'), $('detail-label-4')];
     el.detailValues = [$('detail-value-1'), $('detail-value-2'), $('detail-value-3'), $('detail-value-4')];
+    el.example = $('example');
+    el.exampleRow = $('example-row');
     el.finished = $('finished');
     el.finishedText = $('finished-text');
     el.finishedKanji = $('finished-kanji');
