@@ -1,0 +1,591 @@
+/* Kanji Flashcards - plain CSS, no dependencies. */
+
+:root {
+  color-scheme: light dark;
+
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-kanji: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", "Noto Serif CJK JP",
+    "Source Han Serif", "MS Mincho", "SimSun", serif;
+
+  --bg: #f6f4f0;
+  --bg-raised: #ffffff;
+  --bg-sunken: #ece8e1;
+  --ink: #1d1b19;
+  --ink-soft: #5d574f;
+  --ink-faint: #8a837a;
+  --line: #d9d3c9;
+  --accent: #b3352c;
+  --accent-soft: #f3dedc;
+  --accent-ink: #ffffff;
+  --ok: #2f6b44;
+  --focus: #1f6feb;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 1px 2px rgb(0 0 0 / 6%), 0 8px 24px rgb(0 0 0 / 6%);
+  --card-size: clamp(9rem, 34vmin, 15rem);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161a;
+    --bg-raised: #1c1f25;
+    --bg-sunken: #101216;
+    --ink: #eceff3;
+    --ink-soft: #b3bcc8;
+    --ink-faint: #7d8895;
+    --line: #2c313a;
+    --accent: #e8675c;
+    --accent-soft: #3a2320;
+    --accent-ink: #16181c;
+    --ok: #5fbf85;
+    --focus: #6ea8ff;
+    --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 10px 30px rgb(0 0 0 / 35%);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Several blocks below set an explicit display, which would otherwise win over
+   the user agent rule for [hidden]. */
+[hidden] {
+  display: none !important;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  line-height: 1.2;
+  font-weight: 650;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  padding: 0.6rem 1rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+  z-index: 10;
+}
+
+.skip-link:focus {
+  left: 0.5rem;
+  top: 0.5rem;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Top bar ------------------------------------------------------------------ */
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding: 0.85rem clamp(1rem, 4vw, 2rem);
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar__title {
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+}
+
+.topbar__title::first-letter {
+  color: var(--accent);
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.field__select {
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.6rem;
+  min-width: 12rem;
+  max-width: 60vw;
+}
+
+/* Layout ------------------------------------------------------------------- */
+
+.app {
+  flex: 1;
+  width: 100%;
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 4vw, 2rem) 2.5rem;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+/* The study panel is programmatically focusable so the keyboard works right
+   after a list is opened; it should not look focused though. */
+#study:focus,
+#study:focus-visible {
+  outline: none;
+}
+
+.panel__title {
+  font-size: clamp(1.35rem, 3.5vw, 1.75rem);
+}
+
+.panel__lead {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--ink-soft);
+}
+
+/* List picker -------------------------------------------------------------- */
+
+.picker__groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.picker__group {
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem 1.15rem;
+  box-shadow: var(--shadow);
+}
+
+.picker__group-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+}
+
+.picker__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.picker__button {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+.picker__button:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.picker__button:active {
+  transform: translateY(1px);
+}
+
+.picker__button[aria-current="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.picker__label {
+  font-weight: 600;
+}
+
+.picker__count {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.picker__count[data-progress="started"] {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.picker__note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+  max-width: 75ch;
+}
+
+/* Study view --------------------------------------------------------------- */
+
+.study__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.9rem;
+}
+
+.study__title {
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+}
+
+.study__hint {
+  margin: 0;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+}
+
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.progress__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.progress__fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 200ms ease;
+}
+
+.progress__labels {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Flashcard ---------------------------------------------------------------- */
+
+.flashcard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: var(--card-size);
+  padding: clamp(1.25rem, 4vw, 2rem);
+  font: inherit;
+  color: var(--ink);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 140ms ease, transform 140ms ease;
+}
+
+.flashcard:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.flashcard:active:not(:disabled) {
+  transform: scale(0.995);
+}
+
+.flashcard:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.flashcard__kanji {
+  font-family: var(--font-kanji);
+  font-size: var(--card-size);
+  line-height: 1;
+  font-weight: 500;
+}
+
+.flashcard__details {
+  display: grid;
+  gap: 0.5rem;
+  width: min(100%, 34rem);
+  text-align: left;
+  border-top: 1px solid var(--line);
+  padding-top: 0.9rem;
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 0.25rem 0.9rem;
+  align-items: baseline;
+}
+
+.detail__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--accent);
+}
+
+.detail__value {
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.detail__value[data-kana="true"] {
+  font-family: var(--font-kanji);
+  font-size: 1.15rem;
+  color: var(--ink);
+}
+
+.flashcard__tip {
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+/* Finished state ----------------------------------------------------------- */
+
+.finished {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: clamp(1.1rem, 3vw, 1.6rem);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--ok);
+  border-radius: var(--radius);
+}
+
+.finished__title {
+  font-size: 1.2rem;
+}
+
+.finished__text {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.finished__kanji {
+  margin: 0;
+  font-family: var(--font-kanji);
+  font-size: clamp(1.1rem, 4vw, 1.5rem);
+  line-height: 1.7;
+  word-break: break-all;
+  color: var(--ink-soft);
+  max-height: 9rem;
+  overflow-y: auto;
+}
+
+.finished__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Buttons ------------------------------------------------------------------ */
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.5rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--ink);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.button--key .button__key {
+  flex: none;
+  min-width: 1.6rem;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 0.1rem 0.3rem;
+}
+
+.button--key .button__text {
+  text-align: left;
+}
+
+/* Shortcuts & footer ------------------------------------------------------- */
+
+.shortcuts {
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.85rem;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.shortcuts summary {
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.shortcuts dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.3rem 0.9rem;
+  margin: 0.7rem 0 0.4rem;
+}
+
+.shortcuts dt,
+.shortcuts dd {
+  margin: 0;
+}
+
+kbd {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 0.05rem 0.35rem;
+  background: var(--bg-sunken);
+  color: var(--ink);
+}
+
+.footer {
+  border-top: 1px solid var(--line);
+  background: var(--bg-raised);
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  padding: 1rem clamp(1rem, 4vw, 2rem);
+}
+
+.footer p {
+  margin: 0;
+  max-width: 80ch;
+}
+
+.footer code {
+  font-size: 0.95em;
+}
+
+.noscript {
+  margin: 1rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+}
+
+/* Reveal animation --------------------------------------------------------- */
+
+.flashcard__details {
+  animation: rise 160ms ease-out;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 32rem) {
+  .detail {
+    grid-template-columns: 1fr;
+    gap: 0 0;
+  }
+
+  .field {
+    width: 100%;
+  }
+
+  .field__select {
+    flex: 1;
+    max-width: none;
+  }
+}

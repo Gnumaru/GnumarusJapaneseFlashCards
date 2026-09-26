@@ -1,0 +1,10 @@
+
+*.sublime-*
+*.log
+
+# upstream data downloads used by build-data.py
+.cache/
+
+# python bytecode from the build tool
+__pycache__/
+*.pyc

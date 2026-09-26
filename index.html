@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kanji Flashcards</title>
+<meta name="description" content="Flashcard trainer for JLPT N5-N1 and Jōyō kanji. Plain HTML, CSS and JavaScript.">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#23383;</text></svg>">
+</head>
+<body>
+<a class="skip-link" href="#flashcard">Skip to the flashcard</a>
+
+<header class="topbar">
+  <h1 class="topbar__title">Kanji Flashcards</h1>
+  <nav class="topbar__nav">
+    <label class="field">
+      <span class="field__label">List</span>
+      <select id="list-picker" class="field__select"></select>
+    </label>
+  </nav>
+</header>
+
+<main class="app">
+  <!-- List picker ------------------------------------------------------------>
+  <section id="picker" class="panel" aria-labelledby="picker-title">
+    <h2 id="picker-title" class="panel__title">Choose a list</h2>
+    <p class="panel__lead">Pick a JLPT level or a Jōyō school grade. The cards always appear in the order of the list; shuffle it if you want a different order.</p>
+
+    <div class="picker__groups">
+      <section class="picker__group" aria-labelledby="picker-jlpt">
+        <h3 id="picker-jlpt" class="picker__group-title">JLPT</h3>
+        <ul id="picker-jlpt-list" class="picker__list"></ul>
+      </section>
+      <section class="picker__group" aria-labelledby="picker-joyo">
+        <h3 id="picker-joyo" class="picker__group-title">Jōyō by school grade</h3>
+        <ul id="picker-joyo-list" class="picker__list"></ul>
+      </section>
+    </div>
+
+    <p class="picker__note">Jōyō grades 1&ndash;6 are the official elementary school table. Grades 7&ndash;12 follow the
+      Kanji Kentei levels used by the Japanese school system, since the Ministry of Education does not publish a
+      per-year table for secondary school.</p>
+  </section>
+
+  <!-- Study ------------------------------------------------------------------>
+  <section id="study" class="panel" hidden tabindex="-1" aria-labelledby="study-title">
+    <div class="study__head">
+      <h2 id="study-title" class="study__title">-</h2>
+      <p id="study-hint" class="study__hint">-</p>
+    </div>
+
+    <div class="progress">
+      <div class="progress__bar" role="progressbar" id="progress-bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Practiced kanji">
+        <div id="progress-fill" class="progress__fill"></div>
+      </div>
+      <p class="progress__labels">
+        <span id="progress-done">0 practiced</span>
+        <span id="progress-left">0 left</span>
+      </p>
+    </div>
+
+    <button id="flashcard" class="flashcard" type="button" aria-expanded="false"
+            aria-label="Current kanji. Activate to show or hide its meanings and readings.">
+      <span id="card-kanji" class="flashcard__kanji">-</span>
+      <span id="card-details" class="flashcard__details" hidden>
+        <span class="detail">
+          <span class="detail__label">Meanings</span>
+          <span id="detail-meanings" class="detail__value">-</span>
+        </span>
+        <span class="detail">
+          <span class="detail__label">On&#8217;yomi</span>
+          <span id="detail-onyomi" class="detail__value">-</span>
+        </span>
+        <span class="detail">
+          <span class="detail__label">Kun&#8217;yomi</span>
+          <span id="detail-kunyomi" class="detail__value">-</span>
+        </span>
+        <span class="detail">
+          <span class="detail__label">Strokes</span>
+          <span id="detail-strokes" class="detail__value">-</span>
+        </span>
+        <span class="flashcard__tip">Activate again to hide</span>
+      </span>
+    </button>
+
+    <!-- Shown when every kanji of the list has been practiced. -->
+    <div id="finished" class="finished" hidden>
+      <h3 class="finished__title">List finished</h3>
+      <p id="finished-text" class="finished__text">-</p>
+      <p id="finished-kanji" class="finished__kanji"></p>
+      <div class="finished__actions">
+        <button id="finished-review" class="button" type="button">Practice the practiced ones again</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="action-send-back" class="button button--key" type="button" disabled>
+        <span class="button__key">&larr;</span>
+        <span class="button__text">Send to the end</span>
+      </button>
+      <button id="action-practice" class="button button--key" type="button" disabled>
+        <span class="button__key">&rarr;</span>
+        <span class="button__text">I know this one</span>
+      </button>
+      <button id="action-shuffle" class="button button--key" type="button" disabled>
+        <span class="button__key">S</span>
+        <span class="button__text">Shuffle</span>
+      </button>
+      <button id="action-sort" class="button button--key" type="button" disabled>
+        <span class="button__key">O</span>
+        <span class="button__text">Original order</span>
+      </button>
+      <button id="action-reset" class="button button--key" type="button">
+        <span class="button__key">R</span>
+        <span class="button__text">Reset</span>
+      </button>
+      <button id="action-other-lists" class="button" type="button">
+        <span class="button__text">Change list</span>
+      </button>
+    </div>
+
+    <details class="shortcuts">
+      <summary>Keyboard shortcuts</summary>
+      <dl>
+        <dt><kbd>&larr;</kbd></dt><dd>Move the current kanji to the end of the list</dd>
+        <dt><kbd>&rarr;</kbd></dt><dd>Remove the current kanji from the list</dd>
+        <dt><kbd>Space</kbd> / <kbd>Enter</kbd></dt><dd>Show or hide the meanings and readings</dd>
+        <dt><kbd>S</kbd></dt><dd>Shuffle the remaining kanji</dd>
+        <dt><kbd>O</kbd></dt><dd>Sort the remaining kanji back into the original order</dd>
+        <dt><kbd>R</kbd></dt><dd>Reset the list</dd>
+        <dt><kbd>L</kbd></dt><dd>Jump to the list picker</dd>
+      </dl>
+    </details>
+  </section>
+</main>
+
+<footer class="footer">
+  <p>Progress is saved in this browser only. Kanji data: KANJIDIC2 (EDRDG), JLPT levels from Jonathan Waller&#8217;s
+    JLPT resources, Jōyō grades from the Kanji Kentei grade lists. See <code>CREDITS.md</code>.</p>
+</footer>
+
+<noscript>
+  <p class="noscript">This flashcard app needs JavaScript enabled.</p>
+</noscript>
+
+<script src="js/data/lists.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
